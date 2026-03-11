@@ -11,18 +11,14 @@ const setStore = (key, value) => {
   localStorage.setItem(`neurox_${key}`, JSON.stringify(value));
 };
 
-function dayStr(offset = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().slice(0, 10);
-}
-
 function seedDummyData() {
   if (!localStorage.getItem('neurox_seeded')) {
     setStore('focusHistory', [{score: 8, reaction: 640, level: 2, date: dayStr(-2)}, {score: 11, reaction: 590, level: 3, date: dayStr(-1)}]);
     setStore('memoryHistory', [{level: 3, accuracy: 78, date: dayStr(-2)}, {level: 4, accuracy: 81, date: dayStr(-1)}]);
     setStore('moods', [{mood:'Neutral', energy:5, note:'Steady day', date: dayStr(-1)}]);
-    setStore('forum', [{id: crypto.randomUUID(), section:'ADHD', title:'Best focus routines?', content:'What helps before study?', likes:2, comments:['Pomodoro + noise control works for me.']}]);
+    setStore('forum', [
+      {id: crypto.randomUUID(), section:'ADHD', title:'Best focus routines?', content:'What helps before study?', likes:2, comments:['Pomodoro + noise control works for me.']}
+    ]);
     localStorage.setItem('neurox_seeded', '1');
   }
 }
@@ -30,6 +26,13 @@ function seedDummyData() {
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 
+function dayStr(offset = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
+// Navigation and toggles
 $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
   $$('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -39,75 +42,66 @@ $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
 $('#darkToggle').addEventListener('change', e => document.body.classList.toggle('dark', e.target.checked));
 $('#sensoryToggle').addEventListener('change', e => document.body.classList.toggle('low-sensory', e.target.checked));
 
-// Focus game (single-ball target)
+// Focus game
 let focusState = {score:0, streak:0, level:1, reaction:0, running:false, spawnMs:1200};
 let lastSpawn = 0;
 let focusTimer;
-
 function renderFocusStats() {
   $('#focusScore').textContent = focusState.score;
   $('#focusStreak').textContent = focusState.streak;
   $('#focusLevel').textContent = focusState.level;
   $('#reactionTime').textContent = `${Math.round(focusState.reaction)} ms`;
 }
-
-function spawnFocusTarget() {
+function spawnFocusTargets() {
   if (!focusState.running) return;
   const arena = $('#focusArena');
   arena.innerHTML = '';
-
-  // Visual distractions (not clickable) keep low sensory pressure while retaining challenge.
-  for (let i = 0; i < 5; i++) {
-    const dot = document.createElement('div');
-    const size = 12 + Math.random() * 20;
-    dot.className = 'bg-dot';
-    dot.style.width = `${size}px`;
-    dot.style.height = `${size}px`;
-    dot.style.left = `${Math.random() * (arena.clientWidth - size)}px`;
-    dot.style.top = `${Math.random() * (arena.clientHeight - size)}px`;
-    arena.appendChild(dot);
-  }
-
-  const size = 30 + Math.random() * 28;
-  const target = document.createElement('div');
-  target.className = 'target';
-  target.style.width = `${size}px`;
-  target.style.height = `${size}px`;
-  target.style.left = `${Math.random() * (arena.clientWidth - size)}px`;
-  target.style.top = `${Math.random() * (arena.clientHeight - size)}px`;
+  const size = 28 + Math.random() * 30;
+  const t = document.createElement('div');
+  t.className = 'target';
+  t.style.width = `${size}px`;
+  t.style.height = `${size}px`;
+  t.style.left = `${Math.random() * (arena.clientWidth - size)}px`;
+  t.style.top = `${Math.random() * (arena.clientHeight - size)}px`;
   lastSpawn = performance.now();
-
-  target.addEventListener('click', (e) => {
-    e.stopPropagation();
+  t.addEventListener('click', () => {
     const rt = performance.now() - lastSpawn;
-    focusState.reaction = (focusState.reaction * focusState.score + rt) / (focusState.score + 1);
+    focusState.reaction = (focusState.reaction * (focusState.score) + rt) / (focusState.score + 1);
     focusState.score += 1;
     focusState.streak += 1;
     if (focusState.score % 5 === 0) {
       focusState.level += 1;
-      focusState.spawnMs = Math.max(400, focusState.spawnMs - 120);
+      focusState.spawnMs = Math.max(420, focusState.spawnMs - 100);
       addXP(20);
     }
     renderFocusStats();
-    spawnFocusTarget();
+    spawnFocusTargets();
   });
-  arena.appendChild(target);
-  clearTimeout(focusTimer);
-  focusTimer = setTimeout(spawnFocusTarget, focusState.spawnMs);
+  arena.appendChild(t);
+  const distractors = 1 + Math.floor(focusState.level / 2);
+  for (let i = 0; i < distractors; i++) {
+    const d = document.createElement('div');
+    const ds = 18 + Math.random() * 22;
+    d.className = 'distractor';
+    d.style.width = `${ds}px`;
+    d.style.height = `${ds}px`;
+    d.style.left = `${Math.random() * (arena.clientWidth - ds)}px`;
+    d.style.top = `${Math.random() * (arena.clientHeight - ds)}px`;
+    d.addEventListener('click', () => {
+      focusState.score = Math.max(0, focusState.score - 1);
+      focusState.streak = 0;
+      renderFocusStats();
+    });
+    arena.appendChild(d);
+  }
+  focusTimer = setTimeout(spawnFocusTargets, focusState.spawnMs);
 }
-
-function focusMissPenalty() {
-  if (!focusState.running) return;
-  focusState.score = Math.max(0, focusState.score - 1);
-  focusState.streak = 0;
-  renderFocusStats();
-}
-
 function endFocusGame() {
   focusState.running = false;
   clearTimeout(focusTimer);
   const record = {score: focusState.score, reaction: Math.round(focusState.reaction || 0), level: focusState.level, date: dayStr()};
-  setStore('focusHistory', [record, ...store.focusHistory].slice(0, 15));
+  const next = [record, ...store.focusHistory].slice(0, 15);
+  setStore('focusHistory', next);
   if (record.score > 0) {
     addXP(record.score * 2);
     completeMission('focus');
@@ -115,21 +109,17 @@ function endFocusGame() {
   renderFocusHistory();
   renderDashboard();
 }
-
 $('#startFocus').addEventListener('click', () => {
-  const arena = $('#focusArena');
-  arena.onclick = focusMissPenalty;
   focusState = {score:0, streak:0, level:1, reaction:0, running:true, spawnMs:1200};
   renderFocusStats();
-  spawnFocusTarget();
+  spawnFocusTargets();
   setTimeout(endFocusGame, 30000);
 });
-
 function renderFocusHistory() {
   $('#focusHistory').innerHTML = store.focusHistory.map(h => `<li>${h.date} · Score ${h.score} · ${h.reaction}ms · L${h.level}</li>`).join('');
 }
 
-// Memory game with validation feedback
+// Memory game
 const memoryBoard = $('#memoryBoard');
 let sequence = [];
 let userSeq = [];
@@ -137,8 +127,6 @@ let accepting = false;
 let memoryLevel = 1;
 let memoryCorrect = 0;
 let memoryTotal = 0;
-let memoryPlaying = false;
-
 for (let i = 0; i < 9; i++) {
   const tile = document.createElement('div');
   tile.className = 'memory-tile';
@@ -146,134 +134,58 @@ for (let i = 0; i < 9; i++) {
   tile.addEventListener('click', () => onTileClick(i));
   memoryBoard.appendChild(tile);
 }
-
-function setMemoryFeedback(msg) {
-  $('#memoryFeedback').textContent = msg;
-}
-
 function flashTile(idx) {
   const tile = $$('.memory-tile')[idx];
   tile.classList.add('active');
   setTimeout(() => tile.classList.remove('active'), 350);
 }
-
 function nextMemoryRound() {
   accepting = false;
   userSeq = [];
   sequence.push(Math.floor(Math.random() * 9));
-  setMemoryFeedback(`Watch carefully: sequence length ${sequence.length}`);
   sequence.forEach((val, i) => setTimeout(() => flashTile(val), i * 500 + 400));
-  setTimeout(() => {
-    accepting = true;
-    setMemoryFeedback('Now repeat the exact pattern.');
-  }, sequence.length * 500 + 600);
+  setTimeout(() => accepting = true, sequence.length * 500 + 500);
   $('#memoryLevel').textContent = memoryLevel;
 }
-
-function endMemoryRun(success) {
-  memoryPlaying = false;
-  accepting = false;
-  const acc = Math.round((memoryCorrect / Math.max(1, memoryTotal)) * 100);
-  const rec = {level: memoryLevel, accuracy: acc, date: dayStr()};
-  setStore('memoryHistory', [rec, ...store.memoryHistory].slice(0, 15));
-  addXP(memoryLevel * 3);
-  renderMemoryStats(acc);
-  renderDashboard();
-  setMemoryFeedback(success ? `Great! Final level ${memoryLevel}.` : `Pattern mismatch. Final level ${memoryLevel}.`);
-  sequence = [];
-  memoryLevel = 1;
-}
-
 function onTileClick(idx) {
-  if (!accepting || !memoryPlaying) return;
+  if (!accepting) return;
   flashTile(idx);
   userSeq.push(idx);
   const pos = userSeq.length - 1;
   memoryTotal++;
-
-  if (sequence[pos] === idx) {
-    memoryCorrect++;
-    setMemoryFeedback(`Validated ${userSeq.length}/${sequence.length}`);
-  } else {
-    endMemoryRun(false);
+  if (sequence[pos] === idx) memoryCorrect++;
+  if (sequence[pos] !== idx) {
+    const acc = Math.round((memoryCorrect / Math.max(1, memoryTotal)) * 100);
+    const rec = {level: memoryLevel, accuracy: acc, date: dayStr()};
+    setStore('memoryHistory', [rec, ...store.memoryHistory].slice(0, 15));
+    addXP(memoryLevel * 3);
+    renderMemoryStats(acc);
+    renderDashboard();
+    sequence = [];
+    memoryLevel = 1;
     return;
   }
-
   if (userSeq.length === sequence.length) {
-    accepting = false;
     memoryLevel++;
     addXP(10);
-    setMemoryFeedback('Sequence validated ✅ Next level...');
-    setTimeout(nextMemoryRound, 750);
+    setTimeout(nextMemoryRound, 700);
   }
-
   renderMemoryStats(Math.round((memoryCorrect / Math.max(1, memoryTotal)) * 100));
 }
-
 $('#startMemory').addEventListener('click', () => {
   sequence = [];
   userSeq = [];
   memoryLevel = 1;
   memoryCorrect = 0;
   memoryTotal = 0;
-  memoryPlaying = true;
-  setMemoryFeedback('Starting new memory validation round...');
   nextMemoryRound();
 });
-
 function renderMemoryStats(acc = 100) {
   const best = Math.max(1, ...store.memoryHistory.map(m => m.level), memoryLevel);
   $('#memoryLevel').textContent = memoryLevel;
   $('#bestMemory').textContent = best;
   $('#memoryAccuracy').textContent = `${acc}%`;
 }
-
-// AR/VR Therapy game (mock immersive breathing)
-let calmPoints = 0;
-let therapyTimer;
-let breathTimer;
-
-function spawnCalmStar() {
-  const scene = $('#therapyScene');
-  const star = document.createElement('div');
-  star.className = 'calm-star';
-  star.style.left = `${Math.random() * (scene.clientWidth - 20)}px`;
-  star.style.top = `${Math.random() * (scene.clientHeight - 20)}px`;
-  star.onclick = () => {
-    calmPoints += 5;
-    $('#calmPoints').textContent = calmPoints;
-    addXP(2);
-    star.remove();
-  };
-  scene.appendChild(star);
-  setTimeout(() => star.remove(), 3500);
-}
-
-$('#startTherapy').addEventListener('click', () => {
-  const scene = $('#therapyScene');
-  scene.innerHTML = '<div class="breath-orb"></div>';
-  calmPoints = 0;
-  $('#calmPoints').textContent = calmPoints;
-
-  const phases = ['Inhale 4s', 'Hold 4s', 'Exhale 6s'];
-  let i = 0;
-  clearInterval(breathTimer);
-  $('#breathState').textContent = phases[i];
-  breathTimer = setInterval(() => {
-    i = (i + 1) % phases.length;
-    $('#breathState').textContent = phases[i];
-  }, 4000);
-
-  clearInterval(therapyTimer);
-  therapyTimer = setInterval(spawnCalmStar, 1400);
-  setTimeout(() => {
-    clearInterval(therapyTimer);
-    clearInterval(breathTimer);
-    $('#breathState').textContent = 'Session complete';
-    addXP(20);
-    triggerBadge('🌌 Calm Session Completed');
-  }, 45000);
-});
 
 // Mood tracker
 let selectedMood = 'Neutral';
@@ -282,7 +194,6 @@ $$('#moodOptions button').forEach(btn => btn.addEventListener('click', () => {
   $$('#moodOptions button').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
 }));
-
 $('#saveMood').addEventListener('click', () => {
   const entry = { mood: selectedMood, energy: Number($('#energyRange').value), note: $('#moodNote').value.trim(), date: dayStr() };
   setStore('moods', [entry, ...store.moods].slice(0, 30));
@@ -292,7 +203,6 @@ $('#saveMood').addEventListener('click', () => {
   renderMoods();
   renderDashboard();
 });
-
 function renderMoods() {
   $('#moodList').innerHTML = store.moods.map(m => `<li>${m.date} · ${m.mood} · Energy ${m.energy}/10${m.note ? ` · ${m.note}` : ''}</li>`).join('');
 }
@@ -303,7 +213,6 @@ const botStarters = [
   'Would you like a 60-second breathing exercise?',
   'Try one round of the Focus Game to reset attention.',
 ];
-
 function addChat(role, text) {
   const msg = document.createElement('div');
   msg.className = `msg ${role}`;
@@ -311,7 +220,6 @@ function addChat(role, text) {
   $('#chatBox').appendChild(msg);
   $('#chatBox').scrollTop = $('#chatBox').scrollHeight;
 }
-
 function botRespond(input) {
   const t = input.toLowerCase();
   if (t.includes('stress') || t.includes('overwhelm')) return 'Let’s pause. Inhale for 4, hold for 4, exhale for 6. Repeat 4 times.';
@@ -320,7 +228,6 @@ function botRespond(input) {
   if (t.includes('help')) return 'I can guide reflection, breathing, and routine nudges. You are not alone.';
   return botStarters[Math.floor(Math.random() * botStarters.length)];
 }
-
 $('#sendChat').addEventListener('click', () => {
   const input = $('#chatInput').value.trim();
   if (!input) return;
@@ -334,13 +241,19 @@ $('#createPost').addEventListener('click', () => {
   const title = $('#forumTitle').value.trim();
   const content = $('#forumContent').value.trim();
   if (!title || !content) return;
-  const post = { id: crypto.randomUUID(), section: $('#forumSection').value, title, content, likes: 0, comments: [] };
+  const post = {
+    id: crypto.randomUUID(),
+    section: $('#forumSection').value,
+    title,
+    content,
+    likes: 0,
+    comments: [],
+  };
   setStore('forum', [post, ...store.forum]);
   $('#forumTitle').value = '';
   $('#forumContent').value = '';
   renderForum();
 });
-
 function renderForum() {
   $('#forumPosts').innerHTML = '';
   store.forum.forEach(post => {
@@ -353,19 +266,18 @@ function renderForum() {
       <button data-comment="${post.id}">Comment</button>`;
     $('#forumPosts').appendChild(wrap);
   });
-
   $$('button[data-like]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.like;
-    setStore('forum', store.forum.map(p => p.id === id ? {...p, likes: p.likes + 1} : p));
+    const next = store.forum.map(p => p.id === id ? {...p, likes: p.likes + 1} : p);
+    setStore('forum', next);
     renderForum();
   });
-
   $$('button[data-comment]').forEach(btn => btn.onclick = () => {
     const id = btn.dataset.comment;
-    const input = document.querySelector(`input[data-comment-input="${id}"]`);
-    const val = input.value.trim();
+    const val = document.querySelector(`input[data-comment-input="${id}"]`).value.trim();
     if (!val) return;
-    setStore('forum', store.forum.map(p => p.id === id ? {...p, comments:[...p.comments, val]} : p));
+    const next = store.forum.map(p => p.id === id ? {...p, comments:[...p.comments, val]} : p);
+    setStore('forum', next);
     renderForum();
   });
 }
@@ -375,38 +287,33 @@ let charts = {};
 function moodToNum(m) {
   return {Happy:4, Neutral:3, Stressed:2, Overwhelmed:1}[m] || 3;
 }
-
 function renderDashboard() {
   const streak = calcDailyStreak();
   store.user.streak = streak;
   setStore('user', store.user);
-
   const latestFocus = store.focusHistory[0]?.score || 0;
   const latestMemory = store.memoryHistory[0]?.level || 1;
   const latestMood = store.moods[0]?.mood || 'Neutral';
-
   $('#snapshotStats').innerHTML = `
     <div class="stat-pill">Daily Streak: <strong>${streak}</strong></div>
-    <div class="stat-pill">Focus Best: <strong>${Math.max(0, ...store.focusHistory.map(f => f.score))}</strong></div>
-    <div class="stat-pill">Memory Best: <strong>${Math.max(1, ...store.memoryHistory.map(m => m.level))}</strong></div>
+    <div class="stat-pill">Focus Best: <strong>${Math.max(0,...store.focusHistory.map(f=>f.score))}</strong></div>
+    <div class="stat-pill">Memory Best: <strong>${Math.max(1,...store.memoryHistory.map(m=>m.level))}</strong></div>
     <div class="stat-pill">Latest Mood: <strong>${latestMood}</strong></div>`;
-
   $('#insightText').textContent = latestFocus >= 10
     ? 'Your focus improved this week. Keep your current rhythm and hydration breaks.'
     : 'You are building consistency. Small daily sessions can improve attention steadily.';
 
-  drawChart('focusChart', 'line', store.focusHistory.slice().reverse().map(h => h.score), 'Focus Score');
-  drawChart('memoryChart', 'line', store.memoryHistory.slice().reverse().map(h => h.level), 'Memory Level');
-  drawChart('moodChart', 'line', store.moods.slice().reverse().map(h => moodToNum(h.mood)), 'Mood (1-4)');
+  drawChart('focusChart', 'line', store.focusHistory.slice().reverse().map(h=>h.score), 'Focus Score');
+  drawChart('memoryChart', 'line', store.memoryHistory.slice().reverse().map(h=>h.level), 'Memory Level');
+  drawChart('moodChart', 'line', store.moods.slice().reverse().map(h=>moodToNum(h.mood)), 'Mood (1-4)');
   drawChart('radarChart', 'radar', [
     Math.min(100, latestFocus * 8),
     Math.min(100, latestMemory * 18),
     Math.max(10, 100 - (store.focusHistory[0]?.reaction || 900) / 12),
     Math.min(100, (store.moods[0]?.energy || 5) * 10)
-  ], 'Cognitive Profile', ['Attention', 'Memory', 'Speed', 'Emotional State']);
+  ], 'Cognitive Profile', ['Attention','Memory','Speed','Emotional State']);
   renderGamification();
 }
-
 function drawChart(id, type, data, label, labels) {
   charts[id]?.destroy();
   const ctx = document.getElementById(id);
@@ -419,7 +326,6 @@ function drawChart(id, type, data, label, labels) {
     options: { plugins: { legend: { display: type === 'radar' } }, scales: type === 'radar' ? {} : { y: { beginAtZero: true } } }
   });
 }
-
 function calcDailyStreak() {
   const days = new Set([...store.focusHistory, ...store.memoryHistory, ...store.moods].map(x => x.date));
   let s = 0;
@@ -443,14 +349,12 @@ function addXP(amount) {
   setStore('user', store.user);
   renderGamification();
 }
-
 function completeMission(key) {
   if (!store.user.missions[key]) {
     store.user.missions[key] = true;
     addXP(25);
   }
 }
-
 function renderGamification() {
   $('#userLevel').textContent = store.user.level;
   $('#userXp').textContent = store.user.xp;
@@ -459,7 +363,6 @@ function renderGamification() {
     <li>${store.user.missions.focus ? '✅' : '⬜'} Play 1 focus game</li>
     <li>${store.user.missions.mood ? '✅' : '⬜'} Check mood</li>`;
 }
-
 function triggerBadge(text) {
   const el = $('#badgePopup');
   el.textContent = text;
@@ -474,10 +377,8 @@ function showReminder(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
-
 setInterval(() => showReminder('👀 Eye care break: look 20 ft away for 20 sec.'), 30 * 60 * 1000);
 setInterval(() => showReminder('💧 Hydration check: drink a glass of water.'), 45 * 60 * 1000);
-
 function scheduleSleepReminder() {
   const now = new Date();
   const target = new Date();
@@ -488,7 +389,6 @@ function scheduleSleepReminder() {
     scheduleSleepReminder();
   }, target - now);
 }
-
 scheduleSleepReminder();
 
 // Init
