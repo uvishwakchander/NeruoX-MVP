@@ -21,7 +21,6 @@
         <button class="nav-btn active" data-target="dashboard">Dashboard</button>
         <button class="nav-btn" data-target="focus">Focus Game</button>
         <button class="nav-btn" data-target="memory">Memory Game</button>
-        <button class="nav-btn" data-target="therapy">AR/VR Therapy</button>
         <button class="nav-btn" data-target="mood">Mood</button>
         <button class="nav-btn" data-target="therapist">AI Therapist</button>
         <button class="nav-btn" data-target="community">Community</button>
@@ -62,7 +61,6 @@
       <section id="focus" class="view">
         <article class="card glass">
           <h2>Focus Reaction Arena</h2>
-          <p>Tap only the single green ball as quickly as possible. Missing or tapping outside reduces score.</p>
           <div class="game-metrics">
             <span>Score: <strong id="focusScore">0</strong></span>
             <span>Reaction: <strong id="reactionTime">0 ms</strong></span>
@@ -71,10 +69,6 @@
           </div>
           <button id="startFocus" class="primary">Start Focus Game</button>
           <div id="focusArena" class="arena"></div>
-          <div id="focusEnd" class="game-end hidden">
-            <p id="focusEndText"></p>
-            <button id="restartFocus">Play Again</button>
-          </div>
           <h3>Score History</h3>
           <ul id="focusHistory"></ul>
         </article>
@@ -88,33 +82,8 @@
             <span>Best Level: <strong id="bestMemory">1</strong></span>
             <span>Accuracy: <strong id="memoryAccuracy">100%</strong></span>
           </div>
-          <p id="memoryFeedback" class="feedback">Press Start to begin.</p>
           <button id="startMemory" class="primary">Start Memory Game</button>
-          <button id="endMemory">End Memory Run</button>
           <div id="memoryBoard" class="memory-board"></div>
-          <div id="memoryEnd" class="game-end hidden">
-            <p id="memoryEndText"></p>
-            <button id="restartMemory">Try Again</button>
-          </div>
-        </article>
-      </section>
-
-      <section id="therapy" class="view">
-        <article class="card glass">
-          <h2>AR/VR Therapy (Mock)</h2>
-          <p>Immersive grounding mode: follow breathing and gently track floating calm particles.</p>
-          <div class="game-metrics">
-            <span>Breath Cycle: <strong id="breathState">Ready</strong></span>
-            <span>Calm Points: <strong id="calmPoints">0</strong></span>
-            <span>Time Left: <strong id="therapyTime">45s</strong></span>
-          </div>
-          <button id="startTherapy" class="primary">Start Therapy Session</button>
-          <button id="endTherapy">End Session</button>
-          <div id="therapyScene" class="therapy-scene"></div>
-          <div id="therapyEnd" class="game-end hidden">
-            <p id="therapyEndText"></p>
-            <button id="restartTherapy">Start New Session</button>
-          </div>
         </article>
       </section>
 
