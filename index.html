@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuroX - Gamified Neuro-Wellness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar glass">
+      <div class="brand-wrap">
+        <h1>🧠 NeuroX</h1>
+        <p>Gamified Neuro-Wellness Platform</p>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-target="dashboard">Dashboard</button>
+        <button class="nav-btn" data-target="focus">Focus Game</button>
+        <button class="nav-btn" data-target="memory">Memory Game</button>
+        <button class="nav-btn" data-target="therapy">AR/VR Therapy</button>
+        <button class="nav-btn" data-target="mood">Mood</button>
+        <button class="nav-btn" data-target="therapist">AI Therapist</button>
+        <button class="nav-btn" data-target="community">Community</button>
+      </nav>
+      <div class="toggles">
+        <label><input type="checkbox" id="darkToggle" /> Dark</label>
+        <label><input type="checkbox" id="sensoryToggle" /> Low Sensory</label>
+      </div>
+    </header>
+
+    <main>
+      <section id="dashboard" class="view active">
+        <div class="grid two">
+          <article class="card glass">
+            <h2>Performance Snapshot</h2>
+            <div class="stats-grid" id="snapshotStats"></div>
+            <p id="insightText" class="insight"></p>
+          </article>
+          <article class="card glass">
+            <h2>Gamification</h2>
+            <div class="xp-wrap">
+              <p>Level <span id="userLevel">1</span> · XP <span id="userXp">0</span></p>
+              <div class="progress"><span id="xpBar"></span></div>
+            </div>
+            <ul id="missions"></ul>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card glass"><h3>Focus Score Trend</h3><canvas id="focusChart"></canvas></article>
+          <article class="card glass"><h3>Memory Trend</h3><canvas id="memoryChart"></canvas></article>
+        </div>
+        <div class="grid two">
+          <article class="card glass"><h3>Mood Trend</h3><canvas id="moodChart"></canvas></article>
+          <article class="card glass"><h3>Cognitive Radar</h3><canvas id="radarChart"></canvas></article>
+        </div>
+      </section>
+
+      <section id="focus" class="view">
+        <article class="card glass">
+          <h2>Focus Reaction Arena</h2>
+          <p>Tap only the single green ball as quickly as possible. Missing or tapping outside reduces score.</p>
+          <div class="game-metrics">
+            <span>Score: <strong id="focusScore">0</strong></span>
+            <span>Reaction: <strong id="reactionTime">0 ms</strong></span>
+            <span>Level: <strong id="focusLevel">1</strong></span>
+            <span>Streak: <strong id="focusStreak">0</strong></span>
+          </div>
+          <button id="startFocus" class="primary">Start Focus Game</button>
+          <div id="focusArena" class="arena"></div>
+          <div id="focusEnd" class="game-end hidden">
+            <p id="focusEndText"></p>
+            <button id="restartFocus">Play Again</button>
+          </div>
+          <h3>Score History</h3>
+          <ul id="focusHistory"></ul>
+        </article>
+      </section>
+
+      <section id="memory" class="view">
+        <article class="card glass">
+          <h2>Pattern Memory Grid</h2>
+          <div class="game-metrics">
+            <span>Current Level: <strong id="memoryLevel">1</strong></span>
+            <span>Best Level: <strong id="bestMemory">1</strong></span>
+            <span>Accuracy: <strong id="memoryAccuracy">100%</strong></span>
+          </div>
+          <p id="memoryFeedback" class="feedback">Press Start to begin.</p>
+          <button id="startMemory" class="primary">Start Memory Game</button>
+          <button id="endMemory">End Memory Run</button>
+          <div id="memoryBoard" class="memory-board"></div>
+          <div id="memoryEnd" class="game-end hidden">
+            <p id="memoryEndText"></p>
+            <button id="restartMemory">Try Again</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="therapy" class="view">
+        <article class="card glass">
+          <h2>AR/VR Therapy (Mock)</h2>
+          <p>Immersive grounding mode: follow breathing and gently track floating calm particles.</p>
+          <div class="game-metrics">
+            <span>Breath Cycle: <strong id="breathState">Ready</strong></span>
+            <span>Calm Points: <strong id="calmPoints">0</strong></span>
+            <span>Time Left: <strong id="therapyTime">45s</strong></span>
+          </div>
+          <button id="startTherapy" class="primary">Start Therapy Session</button>
+          <button id="endTherapy">End Session</button>
+          <div id="therapyScene" class="therapy-scene"></div>
+          <div id="therapyEnd" class="game-end hidden">
+            <p id="therapyEndText"></p>
+            <button id="restartTherapy">Start New Session</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="mood" class="view">
+        <article class="card glass">
+          <h2>Daily Mood Check-In</h2>
+          <div class="mood-options" id="moodOptions">
+            <button data-mood="Happy">😊 Happy</button>
+            <button data-mood="Neutral">😐 Neutral</button>
+            <button data-mood="Stressed">😟 Stressed</button>
+            <button data-mood="Overwhelmed">😵 Overwhelmed</button>
+          </div>
+          <label>Energy (1-10): <input type="range" id="energyRange" min="1" max="10" value="5" /></label>
+          <textarea id="moodNote" placeholder="Add a short reflection..."></textarea>
+          <button id="saveMood" class="primary">Save Check-In</button>
+          <ul id="moodList"></ul>
+        </article>
+      </section>
+
+      <section id="therapist" class="view">
+        <article class="card glass">
+          <h2>AI Therapist (Mock)</h2>
+          <div id="chatBox" class="chat-box"></div>
+          <div class="chat-input-wrap">
+            <input id="chatInput" placeholder="How are you feeling today?" />
+            <button id="sendChat" class="primary">Send</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="community" class="view">
+        <article class="card glass">
+          <h2>Community Forum</h2>
+          <div class="forum-controls">
+            <select id="forumSection">
+              <option>ADHD</option>
+              <option>Dyslexia</option>
+              <option>Parents</option>
+              <option>Professionals</option>
+            </select>
+            <input id="forumTitle" placeholder="Topic title" />
+            <textarea id="forumContent" placeholder="Share your thoughts..."></textarea>
+            <button id="createPost" class="primary">Post Topic</button>
+          </div>
+          <div id="forumPosts"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div id="badgePopup" class="badge-popup">🏅 New Badge Unlocked!</div>
+  <div id="reminderToast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
