@@ -272,6 +272,7 @@ let therapyTimeLeft = THERAPY_DURATION_S;
 function renderTherapyPreview() {
   const scene = $('#therapyScene');
   scene.innerHTML = '<div class="breath-orb preview"></div><p id="therapyHint" class="therapy-hint">Preview visible. Press Start Therapy Session to play.</p>';
+  $('#therapyStatus').textContent = 'Idle';
 }
 
 function spawnCalmStar() {
@@ -301,6 +302,7 @@ function endTherapyGame(reason = 'Session complete') {
   clearInterval(breathTimer);
   clearInterval(therapyCountdownTimer);
   $('#breathState').textContent = 'Session complete';
+  $('#therapyStatus').textContent = 'Completed';
   addXP(20);
   triggerBadge('🌌 Calm Session Completed');
   showGameEnd('#therapyEnd', '#therapyEndText', `${reason}. You collected ${calmPoints} calm points (goal: ${THERAPY_GOAL_POINTS}).`);
@@ -318,6 +320,7 @@ function startTherapyGame() {
   calmPoints = 0;
   therapyTimeLeft = THERAPY_DURATION_S;
   therapyRunning = true;
+  $('#therapyStatus').textContent = 'Running';
   $('#calmPoints').textContent = calmPoints;
   $('#therapyTime').textContent = `${therapyTimeLeft}s`;
 
