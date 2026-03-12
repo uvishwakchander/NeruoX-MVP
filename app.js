@@ -1,9 +1,18 @@
+function safeParse(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const store = {
-  focusHistory: JSON.parse(localStorage.getItem('neurox_focus') || '[]'),
-  memoryHistory: JSON.parse(localStorage.getItem('neurox_memory') || '[]'),
-  moods: JSON.parse(localStorage.getItem('neurox_moods') || '[]'),
-  forum: JSON.parse(localStorage.getItem('neurox_forum') || '[]'),
-  user: JSON.parse(localStorage.getItem('neurox_user') || '{"xp":0,"level":1,"streak":0,"missions":{"focus":false,"mood":false}}'),
+  focusHistory: safeParse('neurox_focus', []),
+  memoryHistory: safeParse('neurox_memory', []),
+  moods: safeParse('neurox_moods', []),
+  forum: safeParse('neurox_forum', []),
+  user: safeParse('neurox_user', { xp: 0, level: 1, streak: 0, missions: { focus: false, mood: false } }),
 };
 
 const $ = (s) => document.querySelector(s);
@@ -11,7 +20,11 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 
 const setStore = (key, value) => {
   store[key] = value;
-  localStorage.setItem(`neurox_${key}`, JSON.stringify(value));
+  try {
+    localStorage.setItem(`neurox_${key}`, JSON.stringify(value));
+  } catch {
+    showReminder('Storage is full. New data may not persist.');
+  }
 };
 
 function dayStr(offset = 0) {
@@ -433,8 +446,21 @@ const moodToNum = (m) => ({Happy:4, Neutral:3, Stressed:2, Overwhelmed:1}[m] || 
 
 function drawChart(id, type, data, label, labels) {
   charts[id]?.destroy();
-  const ctx = document.getElementById(id);
-  charts[id] = new Chart(ctx, {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  if (typeof Chart === 'undefined') {
+    const host = canvas.parentElement;
+    if (host && !host.querySelector('.chart-fallback')) {
+      const msg = document.createElement('p');
+      msg.className = 'chart-fallback';
+      msg.textContent = 'Charts unavailable offline (Chart.js CDN not loaded).';
+      host.appendChild(msg);
+    }
+    return;
+  }
+
+  charts[id] = new Chart(canvas, {
     type,
     data: {
       labels: labels || data.map((_, i) => `${i + 1}`),
